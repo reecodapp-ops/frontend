@@ -1,12 +1,93 @@
 import { useState } from 'react'
-import { Package, Plus, Trash2, ShieldAlert, ArrowRight, Pencil, Check, X } from 'lucide-react'
+import { Package, Plus, Trash2, ShieldAlert, ArrowRight, Pencil, Check, X, FolderPlus } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 
+// ── Category select + inline "quick add" used by both the add-form and the edit row ──
+const CategoryField = ({ id, categoryId, categories, onChange, onAddCategory }) => {
+    const [adding, setAdding] = useState(false)
+    const [draftName, setDraftName] = useState('')
+    const [err, setErr] = useState('')
+
+    const handleAdd = () => {
+        const name = draftName.trim()
+        if (!name) { setErr('Category name is required.'); return }
+        if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+            setErr('That category already exists.')
+            return
+        }
+        const newCategory = {
+            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+            name,
+        }
+        onAddCategory(newCategory)
+        onChange(newCategory.id)
+        setDraftName('')
+        setErr('')
+        setAdding(false)
+    }
+
+    if (adding) {
+        return (
+            <div className="form-group">
+                <label className="label">New category</label>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        autoFocus
+                        className="input-field text-sm"
+                        placeholder="e.g. Beverages"
+                        value={draftName}
+                        onChange={e => { setDraftName(e.target.value); setErr('') }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAdd}
+                        className="px-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex-shrink-0"
+                        aria-label="Save category"
+                    >
+                        <Check size={15} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setAdding(false); setDraftName(''); setErr('') }}
+                        className="px-3 rounded-lg border border-border text-muted hover:bg-bg-gray transition-colors flex-shrink-0"
+                        aria-label="Cancel new category"
+                    >
+                        <X size={15} />
+                    </button>
+                </div>
+                {err && <p className="error-msg mt-1">{err}</p>}
+            </div>
+        )
+    }
+
+    return (
+        <div className="form-group">
+            <label htmlFor={id} className="label">Category</label>
+            <select
+                id={id}
+                className="input-field"
+                value={categoryId || ''}
+                onChange={e => {
+                    if (e.target.value === '__add_new__') { setAdding(true); return }
+                    onChange(e.target.value)
+                }}
+            >
+                <option value="">No category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="__add_new__">+ Add new category…</option>
+            </select>
+        </div>
+    )
+}
+
 // ── Inline editor shown inside a list card when Edit is clicked ──────────────
-const ItemEditRow = ({ item, currency, onSave, onCancel }) => {
+const ItemEditRow = ({ item, currency, categories, onAddCategory, onSave, onCancel }) => {
     const [draft, setDraft] = useState({
         name: item.name,
+        category_id: item.category_id || '',
         selling_price: String(item.selling_price),
         stock_qty: String(item.stock_qty),
         low_stock_level: String(item.low_stock_level),
@@ -30,9 +111,12 @@ const ItemEditRow = ({ item, currency, onSave, onCancel }) => {
     const handleSave = () => {
         const e = validate()
         if (Object.keys(e).length) { setErrs(e); return }
+        const category = categories.find(c => c.id === draft.category_id) || null
         onSave({
             ...item,
             name: draft.name.trim(),
+            category_id: draft.category_id || null,
+            category_name: category?.name || null,
             selling_price: parseFloat(draft.selling_price) || 0,
             stock_qty: parseFloat(draft.stock_qty) || 0,
             low_stock_level: parseFloat(draft.low_stock_level) || 5,
@@ -47,6 +131,13 @@ const ItemEditRow = ({ item, currency, onSave, onCancel }) => {
                 value={draft.name}
                 onChange={set('name')}
                 error={errs.name}
+            />
+            <CategoryField
+                id={`edit-category-${item.id}`}
+                categoryId={draft.category_id}
+                categories={categories}
+                onChange={value => setDraft(d => ({ ...d, category_id: value }))}
+                onAddCategory={onAddCategory}
             />
             <div className="grid grid-cols-3 gap-2">
                 <Input
@@ -95,11 +186,13 @@ const ItemEditRow = ({ item, currency, onSave, onCancel }) => {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSubmit, loading, error }) => {
+const Step5InventorySetup = ({ onBack, initialItems = [], initialCategories = [], currency = 'UGX', onSubmit, loading, error }) => {
     const [items, setItems] = useState(initialItems)
+    const [categories, setCategories] = useState(initialCategories)
     const [editingId, setEditingId] = useState(null)  // id of the item currently being edited
     const [form, setForm] = useState({
         name: '',
+        category_id: '',
         selling_price: '',
         stock_qty: '',
         low_stock_level: '5',
@@ -108,6 +201,10 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
 
     const handleChange = field => e => {
         setForm(f => ({ ...f, [field]: e.target.value }))
+    }
+
+    const handleAddCategory = newCategory => {
+        setCategories(prev => [...prev, newCategory])
     }
 
     const validateItem = () => {
@@ -139,10 +236,14 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
         }
         setFormErrors({})
 
+        const category = categories.find(c => c.id === form.category_id) || null
+
         const newItem = {
             // Stable unique id — used to identify items across edits/deletes
             id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
             name: form.name.trim(),
+            category_id: form.category_id || null,
+            category_name: category?.name || null,
             selling_price: parseFloat(form.selling_price) || 0,
             stock_qty: parseFloat(form.stock_qty) || 0,
             low_stock_level: parseFloat(form.low_stock_level) || 5,
@@ -151,6 +252,7 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
         setItems(prev => [...prev, newItem])
         setForm({
             name: '',
+            category_id: form.category_id, // keep the last-used category selected for faster bulk entry
             selling_price: '',
             stock_qty: '',
             low_stock_level: '5',
@@ -169,11 +271,11 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
     }
 
     const handleFinish = () => {
-        onSubmit(items)
+        onSubmit(items, categories)
     }
 
     const handleSkip = () => {
-        onSubmit([])
+        onSubmit([], [])
     }
 
     return (
@@ -209,6 +311,14 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
                     value={form.name}
                     onChange={handleChange('name')}
                     error={formErrors.name}
+                />
+
+                <CategoryField
+                    id="item-category"
+                    categoryId={form.category_id}
+                    categories={categories}
+                    onChange={value => setForm(f => ({ ...f, category_id: value }))}
+                    onAddCategory={handleAddCategory}
                 />
 
                 <div className="grid grid-cols-3 gap-3">
@@ -273,13 +383,22 @@ const Step5InventorySetup = ({ onBack, initialItems = [], currency = 'UGX', onSu
                                     <ItemEditRow
                                         item={item}
                                         currency={currency}
+                                        categories={categories}
+                                        onAddCategory={handleAddCategory}
                                         onSave={handleSaveEdit}
                                         onCancel={() => setEditingId(null)}
                                     />
                                 ) : (
                                     <div className="flex items-center justify-between p-3.5 bg-surface border border-border rounded-xl hover:border-primary transition-colors">
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-bold text-navy text-[14px] truncate">{item.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-navy text-[14px] truncate">{item.name}</p>
+                                                {item.category_name && (
+                                                    <span className="badge badge-neutral flex-shrink-0 flex items-center gap-1 text-[11px]">
+                                                        <FolderPlus size={10} /> {item.category_name}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-muted mt-0.5">
                                                 Price: <span className="font-semibold text-navy">{currency} {item.selling_price.toLocaleString()}</span> &bull; Stock: <span className="font-semibold text-navy">{item.stock_qty}</span> &bull; Low alert: <span className="font-semibold text-navy">{item.low_stock_level}</span>
                                             </p>

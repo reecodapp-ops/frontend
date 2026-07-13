@@ -7,6 +7,7 @@ import AppShell from '../../components/layout/AppShell'
 import { SkeletonRow } from '../../components/ui/SkeletonCard'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import PhoneNumberInput from '../../components/ui/PhoneNumberInput'
 import SlidePanel from '../../components/ui/SlidePanel'
 import DateGroupedList from '../../components/ui/DateGroupedList'
 import EmptyState from '../../components/ui/EmptyState'
@@ -102,11 +103,12 @@ const SearchableDropdown = ({ placeholder, onSearch, results, onSelect, selected
 
 // ─── Record Purchase Panel ───────────────────────────────────────────────────
 const RecordPurchasePanel = ({ onClose, onSuccess, currency }) => {
+  const { business } = useAuth()
   const [supplier, setSupplier] = useState(null)
   const [supplierResults, setSupplierResults] = useState([])
   const [supplierLoading, setSupplierLoading] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
-  const [newSupplier, setNewSupplier] = useState({ name: '', phone: '' })
+  const [newSupplier, setNewSupplier] = useState({ name: '', phone_country_id: '', phone_local_number: '' })
   const [savingSupplier, setSavingSupplier] = useState(false)
 
   const [lines, setLines] = useState([{ product: null, productResults: [], productLoading: false, qty: '', unit_cost: '' }])
@@ -158,10 +160,14 @@ const RecordPurchasePanel = ({ onClose, onSuccess, currency }) => {
     if (!newSupplier.name.trim()) return
     setSavingSupplier(true)
     try {
-      const res = await api.post('/suppliers', newSupplier)
+      const res = await api.post('/suppliers', {
+        name: newSupplier.name.trim(),
+        phone_country_id: newSupplier.phone_country_id ? Number(newSupplier.phone_country_id) : null,
+        phone_local_number: newSupplier.phone_local_number ? newSupplier.phone_local_number.trim() : null,
+      })
       setSupplier(res.data)
       setShowAddSupplier(false)
-      setNewSupplier({ name: '', phone: '' })
+      setNewSupplier({ name: '', phone_country_id: '', phone_local_number: '' })
     } catch { /* ignore */ }
     finally { setSavingSupplier(false) }
   }
@@ -255,7 +261,16 @@ const RecordPurchasePanel = ({ onClose, onSuccess, currency }) => {
               <div className="mt-3 p-4 bg-bg-gray rounded-xl space-y-3 border border-border">
                 <p className="text-sm font-semibold text-navy">New supplier</p>
                 <Input id="new-supplier-name" placeholder="Supplier name" value={newSupplier.name} onChange={e => setNewSupplier(s => ({ ...s, name: e.target.value }))} />
-                <Input id="new-supplier-phone" placeholder="Phone (optional)" value={newSupplier.phone} onChange={e => setNewSupplier(s => ({ ...s, phone: e.target.value }))} />
+                <PhoneNumberInput
+                  id="new-supplier-phone"
+                  countryId={newSupplier.phone_country_id}
+                  localNumber={newSupplier.phone_local_number}
+                  defaultCountryId={business?.country_id}
+                  onChange={({ phone_country_id, phone_local_number }) =>
+                    setNewSupplier(s => ({ ...s, phone_country_id, phone_local_number }))
+                  }
+                  required={false}
+                />
                 <div className="flex gap-2">
                   <Button type="button" variant="secondary" size="sm" onClick={() => setShowAddSupplier(false)} className="flex-1">Cancel</Button>
                   <Button type="button" size="sm" loading={savingSupplier} onClick={handleSaveSupplier} className="flex-1">Save supplier</Button>

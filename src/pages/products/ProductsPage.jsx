@@ -6,6 +6,7 @@ import { SkeletonRow } from '../../components/ui/SkeletonCard'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import PhoneNumberInput from '../../components/ui/PhoneNumberInput'
 import SlidePanel from '../../components/ui/SlidePanel'
 import WarningBanner from '../../components/ui/WarningBanner'
 import ConfirmationBanner from '../../components/ui/ConfirmationBanner'
@@ -101,9 +102,12 @@ const SupplierSearch = ({ value, onSelect, error }) => {
 
 // ─── Restock Modal ────────────────────────────────────────────────────────────
 const RestockModal = ({ product, currency, onClose, onSaved }) => {
+  const { business } = useAuth()
   const [supplier, setSupplier] = useState(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [quickAddName, setQuickAddName] = useState('')
+  const [quickAddPhoneCountryId, setQuickAddPhoneCountryId] = useState('')
+  const [quickAddPhoneLocal, setQuickAddPhoneLocal] = useState('')
   const [quickAddLoading, setQuickAddLoading] = useState(false)
   const [quickAddError, setQuickAddError] = useState('')
   const [qty, setQty] = useState('1')
@@ -212,14 +216,19 @@ const RestockModal = ({ product, currency, onClose, onSaved }) => {
                   onChange={e => setQuickAddName(e.target.value)}
                   autoFocus
                 />
+                <PhoneNumberInput
+                  id="restock-quickadd-phone"
+                  countryId={quickAddPhoneCountryId}
+                  localNumber={quickAddPhoneLocal}
+                  defaultCountryId={business?.country_id}
+                  onChange={({ phone_country_id, phone_local_number }) => {
+                    setQuickAddPhoneCountryId(phone_country_id)
+                    setQuickAddPhoneLocal(phone_local_number)
+                  }}
+                  required={false}
+                />
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="flex-1"
-                    onClick={() => setShowQuickAdd(false)}
-                  >Cancel</Button>
+                  <Button type="button" size="sm" variant="secondary" className="flex-1" onClick={() => setShowQuickAdd(false)}>Cancel</Button>
                   <Button
                     type="button"
                     size="sm"
@@ -230,7 +239,11 @@ const RestockModal = ({ product, currency, onClose, onSaved }) => {
                       setQuickAddLoading(true)
                       setQuickAddError('')
                       try {
-                        const res = await api.post('/suppliers', { name: quickAddName.trim() })
+                        const res = await api.post('/suppliers', {
+                          name: quickAddName.trim(),
+                          phone_country_id: quickAddPhoneCountryId ? Number(quickAddPhoneCountryId) : null,
+                          phone_local_number: quickAddPhoneLocal ? quickAddPhoneLocal.trim() : null,
+                        })
                         setSupplier(res.data)
                         setShowQuickAdd(false)
                       } catch (err) {
@@ -402,7 +415,7 @@ const ProductForm = ({
     }
 
     if (!lockStock) {
-      payload.stock_on_hand = parseInt(form.stock_on_hand, 10)
+      payload.stock_qty = parseInt(form.stock_on_hand, 10)
     }
 
     onSubmit(payload)

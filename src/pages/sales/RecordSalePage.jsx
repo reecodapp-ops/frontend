@@ -7,6 +7,7 @@ import {
 import AppShell from '../../components/layout/AppShell'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import PhoneNumberInput from '../../components/ui/PhoneNumberInput'
 import ReceiptView from '../../components/sales/ReceiptView'
 import WarningBanner from '../../components/ui/WarningBanner'
 import ReLoginModal from '../../components/shared/ReLoginModal'
@@ -231,7 +232,8 @@ const RecordSalePage = () => {
   const [paymentType, setPaymentType] = useState('CASH')
   const [customer, setCustomer] = useState(null)
   const [showAddCustomer, setShowAddCustomer] = useState(false)
-  const [newCust, setNewCust] = useState({ full_name: '', phone_number: '' })
+  const [newCust, setNewCust] = useState({ full_name: '', phone_country_id: '', phone_local_number: '' })
+  const [custErrors, setCustErrors] = useState({})
   const [savingCust, setSavingCust] = useState(false)
 
   const [lines, setLines] = useState([emptyLine()])
@@ -326,14 +328,24 @@ const RecordSalePage = () => {
   const handleSaveCustomer = async () => {
     if (!newCust.full_name.trim()) return
     setSavingCust(true)
+    setCustErrors({})
     try {
-      const res = await api.post('/customers', { full_name: newCust.full_name.trim(), phone_number: newCust.phone_number.trim() || null })
+      const res = await api.post('/customers', {
+        full_name: newCust.full_name.trim(),
+        phone_country_id: newCust.phone_country_id ? Number(newCust.phone_country_id) : null,
+        phone_local_number: newCust.phone_local_number ? newCust.phone_local_number.trim() : null,
+      })
       setCustomer(res.data)
       setShowAddCustomer(false)
-      setNewCust({ full_name: '', phone_number: '' })
+      setNewCust({ full_name: '', phone_country_id: '', phone_local_number: '' })
       triggerNewIdempotencyKey()
-    } catch { /* ignore */ }
-    finally { setSavingCust(false) }
+    } catch (err) {
+      if (err.response?.data?.code === 'invalid_phone_number' || err.response?.data?.detail?.toLowerCase().includes('phone')) {
+        setCustErrors(prev => ({ ...prev, phone: err.response?.data?.detail || 'Invalid phone number.' }))
+      }
+    } finally {
+      setSavingCust(false)
+    }
   }
 
   const validate = () => {
@@ -616,7 +628,17 @@ const RecordSalePage = () => {
                         <User size={15} className="text-primary" /> New customer
                       </p>
                       <Input id="new-cust-name" placeholder="Customer name" value={newCust.full_name} onChange={e => setNewCust(c => ({ ...c, full_name: e.target.value }))} />
-                      <Input id="new-cust-phone" placeholder="Phone (optional)" value={newCust.phone_number} onChange={e => setNewCust(c => ({ ...c, phone_number: e.target.value }))} />
+                      <PhoneNumberInput
+                        id="new-cust-phone"
+                        countryId={newCust.phone_country_id}
+                        localNumber={newCust.phone_local_number}
+                        defaultCountryId={business?.country_id}
+                        onChange={({ phone_country_id, phone_local_number }) =>
+                          setNewCust(c => ({ ...c, phone_country_id, phone_local_number }))
+                        }
+                        error={custErrors.phone}
+                        required={false}
+                      />
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setShowAddCustomer(false)} className="btn btn-secondary flex-1 py-2 text-xs font-semibold rounded-xl">Cancel</button>
                         <button type="button" loading={savingCust} onClick={handleSaveCustomer} className="btn btn-primary flex-1 py-2 text-xs font-semibold rounded-xl">Save customer</button>
