@@ -18,6 +18,13 @@ RUN npm ci
 # Copy local code to the container image.
 COPY . ./
 
+# Declare the build-time variable (Railway passes dashboard variables as
+# build args automatically for Dockerfile builds when declared with ARG).
+ARG VITE_API_BASE_URL
+# Expose it to the Vite build step as a real env var, since Vite reads
+# from process.env / .env at build time, not from Docker ARGs directly.
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Build the app.
 RUN npm run build
 
