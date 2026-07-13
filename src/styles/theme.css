@@ -1,0 +1,23 @@
+:root {
+  --primary: #1868DC;
+  --primary-hover: #155bc2;
+  --accent-green: #81B334;
+  --accent-yellow: #FEA700;
+  --accent-purple: #C063F3;
+
+  --black: #101010;
+  --white: #F4F4F4;
+
+  --heading-font: "Geist", sans-serif;
+  --body-font: "Archivo", sans-serif;
+
+  --radius: 16px;
+  --radius-xl: 12px;
+
+  --border: #DFE1E6;
+  --muted: #6B778C;
+  
+  --shadow-card: 0 1px 3px 0 rgba(16, 16, 16, 0.08), 0 0 0 1px rgba(16, 16, 16, 0.04);
+  --shadow-card-hover: 0 4px 12px 0 rgba(16, 16, 16, 0.12), 0 0 0 1px rgba(16, 16, 16, 0.06);
+  --shadow-modal: 0 8px 32px 0 rgba(16, 16, 16, 0.18);
+}

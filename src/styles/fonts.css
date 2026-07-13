@@ -1,0 +1,55 @@
+@font-face {
+  font-family: "Archivo";
+  src: url("../assets/fonts/Archivo/static/Archivo-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Archivo";
+  src: url("../assets/fonts/Archivo/static/Archivo-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Archivo";
+  src: url("../assets/fonts/Archivo/static/Archivo-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Archivo";
+  src: url("../assets/fonts/Archivo/static/Archivo-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("../assets/fonts/Geist/static/Geist-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("../assets/fonts/Geist/static/Geist-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("../assets/fonts/Geist/static/Geist-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("../assets/fonts/Geist/static/Geist-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Congolese Swahili overrides. Only keys that differ from standard Swahili (sw) need to be listed here. Missing keys fall back to sw/translation.json, then en/translation.json.",
+  "nav": {
+    "dashboard": "Bord ya Kazi",
+    "sales": "Mauzo",
+    "customers": "Wateja",
+    "capital": "Fedha ndani / nje",
+    "log_out": "Ondoka"
+  },
+  "auth": {
+    "welcome_back": "Karibu tena",
+    "login_button": "Ingia",
+    "forgot_password": "Umesahau neno la siri?"
+  },
+  "dashboard": {
+    "greeting_morning": "Asubuhi njema",
+    "greeting_afternoon": "Mchana mwema",
+    "greeting_evening": "Jioni njema"
+  }
+}
